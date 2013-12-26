@@ -1,0 +1,159 @@
+package com.github.lproges.compiler.es;
+
+import com.github.lproges.compiler.Attr;
+import com.github.lproges.compiler.Err;
+import java.util.LinkedList;
+
+
+parser code {: 
+    LinkedList<Err> errores = new LinkedList<>();
+    LinkedList<String> tres = new LinkedList<>();
+
+    public LinkedList<Err> getErrores(){
+        return errores;
+    }
+    public LinkedList<String> getTres(){
+        return tres;
+    }
+
+    public void report_error(String message, Object info){
+        Err e = new Err(message,null,Err.TIPO.SINTACTICO);
+
+        if(info instanceof java_cup.runtime.Symbol){
+            e.setSym((java_cup.runtime.Symbol)info);
+        }
+        getErrores().add(e);
+    }
+    public void report_fatal_error(String message,Object info){
+        report_error(message,info);
+    }
+:};
+
+action code{:
+
+    void report_error(String msg,Object info){
+        parser.report_error(msg,info);
+    }
+    void addTres(String tres){
+        parser.getTres().add(tres);
+    }
+    void addError(String msg,Object info,Err.TIPO tipo){
+        parser.getErrores().add(new Err(msg,info,tipo));
+    }
+:}
+
+
+/****************************************************************************************/
+terminal        String      KW_INT,KW_STRING,KW_BOOLEAN,KW_FLOAT,KW_CHAR,INT,STRING,BOOLEAN,
+                            FLOAT,CHAR,ID,COMA,PCOMA,EQUAL,DEQUAL,LTHAN,BTHAN,LETHAN,BETHAN,
+                            NOT,OR,AND,PUNTO,NEQUAL,LP,RP,LB,RB,MINUS,PLUS,MULTI,DIV,PUBLIC,
+                            PRIVATE,SELECT,CASE,EXIT,DEFAULT,WHILE,FOR,IF,ELSEIF
+                            ;
+non terminal    Attr        begin,input,stmt_list,stmt,id,int,string,boolean,float,char,declaracion,
+                            id_list,tipo,expr
+                            ;
+/****************************************************************************************/
+begin       ::= input:x   
+                {:
+                    System.out.println("Compiled...");
+                :}
+                |
+                ;
+// *********************************************************************************
+// Input - Contenido de la entrada
+// *********************************************************************************
+input       ::= stmt_list:x     
+                {:
+                :}
+                ;
+
+stmt_list   ::= stmt_list:l stmt:x
+                {:
+                :}
+                |stmt:x
+                {:
+                :}
+                ;
+stmt        ::= //declaracion PCOMA
+                //|declaracion EQUAL expr PCOMA
+                |metodo
+                //|clase
+                ;
+
+
+
+declaracion ::= tipo:t id_list:l
+                ;
+tipo        ::= KW_CHAR         {:RESULT = new Attr("tipo","char");:}
+                |KW_BOOLEAN     {:RESULT = new Attr("tipo","boolean");:}
+                |KW_STRING      {:RESULT = new Attr("tipo","string");:}
+                |KW_INT         {:RESULT = new Attr("tipo","int");:}
+                |KW_FLOAT       {:RESULT = new Attr("tipo","float");:}
+                |error          {:RESULT = new Attr();:}
+                ;
+
+id_list     ::= id_list COMA id
+                |id
+                ;
+
+
+char        ::= CHAR:x   
+                {:
+                    Attr a = new Attr();
+                    a.set("val",x);
+                    a.set("tipo","char");
+                    a.set("info",CUP$Parser$stack.peek());
+                    RESULT = a;
+                :}
+                ;
+
+float       ::= FLOAT:x   
+                {:
+                    Attr a = new Attr();
+                    a.set("val",x);
+                    a.set("tipo","float");
+                    a.set("info",CUP$Parser$stack.peek());
+                    RESULT = a;
+                :}
+                ;
+
+boolean     ::= BOOLEAN:x   
+                {:
+                    Attr a = new Attr();
+                    a.set("val",x);
+                    a.set("tipo","boolean");
+                    a.set("info",CUP$Parser$stack.peek());
+                    RESULT = a;
+                :}
+                ;
+string      ::= STRING:x     
+                {:
+                    Attr a = new Attr();
+                    a.set("val",x);
+                    a.set("tipo","string");
+                    a.set("info",CUP$Parser$stack.peek());
+                    RESULT = a;
+                :}
+                ;
+int         ::= INT:x       
+                {:
+                    Attr a = new Attr();
+                    a.set("val",x);
+                    a.set("tipo","int");
+                    a.set("info",CUP$Parser$stack.peek());
+                    RESULT = a;
+                :}
+                    ;
+id          ::= ID:x        
+                {:
+                    Attr a = new Attr();
+                    a.set("val",x);
+                    a.set("id",true);
+                    a.set("info",CUP$Parser$stack.peek());
+                    RESULT = a;
+                :}
+                ;
+
+
+
+
