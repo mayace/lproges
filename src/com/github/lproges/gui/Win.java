@@ -321,22 +321,22 @@ public class Win extends javax.swing.JFrame {
     public HashMap<Object, Nodo.Operation> getOperaciones() {
         HashMap<Object, Nodo.Operation> operaciones = new HashMap<>();
         // definicion de las operaciones soportadas 
-        Nodo.Operation DECLARACION = new Nodo.Operation("declaracion") {
+        Nodo.Operation declaracion = new Nodo.Operation("declaracion") {
 
             @Override
             public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
 
             }
         };
-
-        Nodo.Operation MAIN = new Nodo.Operation("main") {
+        Nodo.Operation main = new Nodo.Operation("main") {
 
             @Override
             public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
                 Attr val_attr = new Attr();
 
                 Nodo l = nodo.getLeft();
-                String tres = String.format("// METODO PRINCIPAL \n int main(){\n%s\nreturn 0;}", "//tres del main");
+
+                String tres = String.format("// METODO PRINCIPAL \n int main(){\n%s\nreturn 0;\n}", "//tres del main");
 
                 val_attr.set("tres", tres);
 
@@ -344,9 +344,25 @@ public class Win extends javax.swing.JFrame {
             }
         };
 
+        Nodo.Operation declaracion_array = new Nodo.Operation("declaracion_array") {
+
+            @Override
+            public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
+                Attr val = new Attr();
+                Attr l_attr = (Attr) nodo.getLeft().getVal();
+                Attr tipo_attr = l_attr.getAttr("tipo");
+                Attr id_attr = l_attr.getAttr("id");
+                ArrayList<Attr> list = l_attr.getList("list");
+                
+                
+                nodo.setVal(val);
+            }
+        };
+
         // registro de las operaciones
-        operaciones.put(MAIN.getId(), MAIN);
-        operaciones.put(DECLARACION.getId(), DECLARACION);
+        operaciones.put(main.getId(), main);
+        operaciones.put(declaracion.getId(), declaracion);
+        operaciones.put(declaracion_array.getId(), declaracion_array);
         return operaciones;
     }
 

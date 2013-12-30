@@ -51,11 +51,11 @@ terminal        String      KW_INT,KW_STRING,KW_BOOLEAN,KW_FLOAT,KW_CHAR,INT,STR
                             FLOAT,CHAR,ID,COMA,PCOMA,EQUAL,DEQUAL,LTHAN,BTHAN,LETHAN,BETHAN,
                             NOT,OR,AND,PUNTO,NEQUAL,LP,RP,LB,RB,MINUS,PLUS,MULTI,DIV,PUBLIC,
                             PRIVATE,SELECT,CASE,EXIT,DEFAULT,WHILE,FOR,IF,ELSEIF,KW_NORMAL,
-                            KW_INCLUDE,INCLUDE_STRING,INCLUDE_CHAR
+                            KW_INCLUDE,INCLUDE_STRING,INCLUDE_CHAR,KW_OF,KW_ARRAY,CQ,OQ
                             ;
 non terminal    Attr        begin,input,stmt_list,stmt,id,int,string,boolean,float,char,def_var,
                             id_list,tipo,expr,include_list,include,def_list,def,main_def,main_body,
-                            var_def
+                            var_def,dimension,dimension_list
                             ;
 /****************************************************************************************/
 begin       ::= input 	{:System.out.println("[Compiler] - Compiled...");:}
@@ -142,17 +142,47 @@ var_def 	::= tipo:t id_list:l PCOMA
 					Nodo left = new Nodo(l_attr,false);
 					Nodo right = null;
 
-					attr.set("nodo",new Nodo("asignacion",left,right));
+					attr.set("nodo",new Nodo("declaracion",left,right));
+
+					RESULT = attr;
+				:}
+				|tipo:t id_list:l EQUAL expr:e PCOMA
+				{:
+					Attr attr = new Attr();
+					Attr l_attr = new Attr();
+
+					l_attr.set("tipo",t);
+					l_attr.set("list",l.getList("list"));
+
+					Nodo left = new Nodo(l_attr,false);
+					Nodo right = e.getNodo("nodo");
+
+					attr.set("nodo",new Nodo("declaracion",left,right));
+
+					RESULT = attr;
+				:}
+				|KW_ARRAY KW_OF tipo:t id:x dimension_list:l PCOMA
+				{:
+					Attr attr = new Attr();
+					Attr l_attr = new Attr();
+
+					l_attr.set("tipo",t);
+					l_attr.set("id",x);
+					l_attr.set("dimension",l.get("list"));
+
+					Nodo left = new Nodo(l_attr,false);
+
+					attr.set("nodo",new Nodo("declaracion_array",left,null));
 
 					RESULT = attr;
 				:}
                 ;
 
-tipo        ::= KW_CHAR         {:RESULT = new Attr("tipo","char");:}
-                |KW_BOOLEAN     {:RESULT = new Attr("tipo","boolean");:}
-                |KW_STRING      {:RESULT = new Attr("tipo","string");:}
-                |KW_INT         {:RESULT = new Attr("tipo","int");:}
-                |KW_FLOAT       {:RESULT = new Attr("tipo","float");:}
+tipo        ::= KW_CHAR         {:RESULT = new Attr("val","char");:}
+                |KW_BOOLEAN     {:RESULT = new Attr("val","boolean");:}
+                |KW_STRING      {:RESULT = new Attr("val","string");:}
+                |KW_INT         {:RESULT = new Attr("val","int");:}
+                |KW_FLOAT       {:RESULT = new Attr("val","float");:}
                 |error          {:RESULT = new Attr();:}
                 ;
 
@@ -171,6 +201,38 @@ id_list     ::= id_list:l COMA id:x
                 	RESULT = attr;
                 :}
                 ;
+
+dimension_list 	::=	dimension_list:l dimension:x
+					{:
+						l.getList("list").add(x);
+						RESULT = x;
+					:}
+					|dimension:x
+					{:
+						Attr attr = new Attr();
+						ArrayList<Attr> list = new ArrayList<>();
+
+						list.add(x);
+
+						attr.set("list",list);
+
+						RESULT = attr;
+					:}
+					;
+dimension 		::= OQ expr:x CQ 	{:RESULT = x;:}
+					;
+
+// *********************************************************************************
+// Expresion
+// *********************************************************************************
+
+expr 		::=	int:x		{:RESULT = x;:}
+				|char:x		{:RESULT = x;:}
+				|float:x	{:RESULT = x;:}
+				|string:x	{:RESULT = x;:}
+				|boolean:x	{:RESULT = x;:}
+				|id:x 		{:RESULT = x;:}
+				;
 
 // *********************************************************************************
 // Datos primitivos

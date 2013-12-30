@@ -67,6 +67,10 @@ SIMPLE_COMMENT  = "&"[^\n\r]*{NEWLINE}
     "normal"            {return symbol(Sym.KW_NORMAL);}
 
     "incluir"           {return symbol(Sym.KW_INCLUDE);}
+    "arreglo"           {return symbol(Sym.KW_ARRAY);}
+    "de"                {return symbol(Sym.KW_OF);}
+    "¿"                 {return symbol(Sym.OQ);}
+    "?"                 {return symbol(Sym.CQ);}
 
 
     "="                 {return symbol(Sym.EQUAL);}
