@@ -4,7 +4,6 @@ import com.github.lproges.compiler.Attr;
 import com.github.lproges.compiler.Err;
 import com.github.lproges.compiler.Nodo;
 import java.util.LinkedList;
-import java.util.ArrayList;
 
 
 parser code {: 
@@ -81,14 +80,15 @@ include 		::= KW_INCLUDE INCLUDE_STRING PCOMA
 // Definiciones alto nivel...
 // *********************************************************************************
 
-def_list	::=	def_list def
-				|def
+def_list	::=	def_list:l def:x
+				{:
+
+				:}
+				|def:x
+				{:RESULT = x;:}
 				;
 
-def 		::= main_def:x 	
-				{:
-					addNodo(x.getNodo("nodo"));
-				:}
+def 		::= main_def:x 	{:RESULT = x;:}
 				//|class_def
 				|error 		{:RESULT = new Attr();:}
 				;
@@ -96,15 +96,26 @@ def 		::= main_def:x
 main_def	::=	KW_NORMAL id:x LP RP LB main_body:b RB
 				{:
 					Attr attr = new Attr();
+					String nombre = x.getString("val");
 
-					attr.set("nodo",new Nodo("main",b.getNodo("nodo"),null));
-					
+					if(nombre.equals("principal")){
+						String tres =	"int main(){" + "\n"
+										+ 	"\t" + b.getString("tres")
+										+ 	"\t" + "return 0;" + "\n"
+										+ "}";
+						attr.set("main",true);
+						attr.set("id",x);
+						attr.set("tres",tres);
+					} else {
+						addError("Se esperaba el método principal...",x.get("info"),Err.TIPO.SINTACTICO);
+					}
+
 					RESULT = attr;
 				:}
 				;
 
-main_body 	::= stmt_list:x 	{:RESULT = x;:}
-				|				{:RESULT = new Attr();:}
+main_body 	::= stmt_list
+				|
 				;
 
 // DEFINICION CLASE
@@ -114,18 +125,12 @@ main_body 	::= stmt_list:x 	{:RESULT = x;:}
 // *********************************************************************************
 stmt_list   ::= stmt_list:l stmt:x
                 {:
-                	Attr attr = new Attr();
-
-                	attr.set("nodo",new Nodo("stmt",l.getNodo("nodo"),x.getNodo("nodo")));
-
-                	RESULT = attr;
                 :}
                 |stmt:x
                 {:
-                	RESULT = x;
                 :}
                 ;
-stmt        ::= var_def:x 	{:RESULT = x;:}
+stmt        ::= var_def
                 ;
 
 
@@ -133,21 +138,9 @@ stmt        ::= var_def:x 	{:RESULT = x;:}
 // DEFINICION DE VARIABLES
 var_def 	::= tipo:t id_list:l PCOMA
 				{:
-					Attr attr = new Attr();
-					Attr l_attr = new Attr();
 
-					l_attr.set("tipo",t);
-					l_attr.set("list",l.getList("list"));
-
-					Nodo left = new Nodo(l_attr,false);
-					Nodo right = null;
-
-					attr.set("nodo",new Nodo("asignacion",left,right));
-
-					RESULT = attr;
 				:}
                 ;
-
 tipo        ::= KW_CHAR         {:RESULT = new Attr("tipo","char");:}
                 |KW_BOOLEAN     {:RESULT = new Attr("tipo","boolean");:}
                 |KW_STRING      {:RESULT = new Attr("tipo","string");:}
@@ -156,20 +149,8 @@ tipo        ::= KW_CHAR         {:RESULT = new Attr("tipo","char");:}
                 |error          {:RESULT = new Attr();:}
                 ;
 
-id_list     ::= id_list:l COMA id:x
-				{:
-					l.getList("list").add(x);
-					RESULT = l;
-				:}
-                |id:x
-                {:
-                	Attr attr = new Attr();
-                	ArrayList<Attr> list = new ArrayList<>();
-                	list.add(x);
-                	attr.set("list",list);
-
-                	RESULT = attr;
-                :}
+id_list     ::= id_list COMA id
+                |id
                 ;
 
 // *********************************************************************************

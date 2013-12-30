@@ -45,7 +45,7 @@ public class TextPane extends JScrollPane {
         txtEditor = new javax.swing.JTextArea();
 
         txtEditor.setColumns(20);
-        txtEditor.setFont(new java.awt.Font("Consolas", 0, 18)); // NOI18N
+        txtEditor.setFont(new java.awt.Font("Cousine", 0, 24)); // NOI18N
         txtEditor.setRows(5);
         txtEditor.setTabSize(4);
         setViewportView(txtEditor);

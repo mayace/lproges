@@ -1,15 +1,22 @@
 package com.github.lproges.gui;
 
+import com.github.lproges.compiler.Attr;
 import com.github.lproges.compiler.Err;
+import com.github.lproges.compiler.Nodo;
+import com.github.lproges.compiler.Sim;
 import com.github.lproges.compiler.es.Parser;
 import com.github.lproges.compiler.es.Scanner;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -249,22 +256,99 @@ public class Win extends javax.swing.JFrame {
             Parser p = new Parser(s);
             try {
                 p.parse();
-                LinkedList<String> tres = p.getTres();
-                LinkedList<Err> errores = s.getErrores();
-                errores.addAll(p.getErrores());
-                //salida
-                Path tres_file = Paths.get("/home/ce/3dir.cpp");
-                Files.createFile(tres_file);
-                PrintWriter out = new PrintWriter(Files.newOutputStream(tres_file));
-                out.print("");
-                for (String str : tres) {
-                    out.println(str);
-                }
+                // procesar el resultado obtenido por el commpilador
+                process_result(s, p);
             } catch (Exception ex) {
                 Logger.getLogger(Win.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+
+    public void process_result(Scanner scanner, Parser parser) {
+        // errores
+        LinkedList<Err> errores = new LinkedList<>();
+        errores.addAll(scanner.getErrores());
+        errores.addAll(parser.getErrores());
+
+        if (errores.isEmpty()) {
+            // sin errores
+            Nodo.CompilerStuff cstuff = getCompilerStuffs();
+            HashMap<Object, Nodo.Operation> operaciones = getOperaciones();
+
+            // procesar nodos
+            LinkedList<Nodo> nodos = parser.getNodos();
+            for (Nodo nodo : nodos) {
+                nodo.exec(cstuff, operaciones);
+            }
+            // procesar resultados del nodo
+            Path file = Paths.get("3dir.cpp");
+            // limpiar archivo
+            write_file(file, "", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            // escribir texto 3dir generado por cada nodo
+            for (Nodo nodo : nodos) {
+                Attr nodo_attr = (Attr) nodo.getVal();
+                String nodo_tres = nodo_attr.getString("tres");
+                write_file(file, nodo_tres, StandardOpenOption.APPEND);
+            }
+        } else {
+            // con errores
+            for (Err err : errores) {
+                err.println();
+            }
+        }
+
+
     }//GEN-LAST:event_compileMenuActionPerformed
+
+    public void write_file(Path file, String write, OpenOption... ooptions) {
+        try {
+            Files.write(file, write.getBytes(), ooptions);
+        } catch (IOException ex) {
+            Logger.getLogger(Win.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public Nodo.CompilerStuff getCompilerStuffs() {
+        final int[] stack = new int[100];
+        final int[] heap = new int[100];
+        HashMap<Object, Sim> symtable = new HashMap<>();
+        LinkedList<Err> errores = new LinkedList<>();
+
+        Nodo.CompilerStuff cosas_compildor = new Nodo.CompilerStuff(stack, heap, symtable, errores);
+        return cosas_compildor;
+    }
+
+    public HashMap<Object, Nodo.Operation> getOperaciones() {
+        HashMap<Object, Nodo.Operation> operaciones = new HashMap<>();
+        // definicion de las operaciones soportadas 
+        Nodo.Operation DECLARACION = new Nodo.Operation("declaracion") {
+
+            @Override
+            public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
+
+            }
+        };
+
+        Nodo.Operation MAIN = new Nodo.Operation("main") {
+
+            @Override
+            public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
+                Attr val_attr = new Attr();
+
+                Nodo l = nodo.getLeft();
+                String tres = String.format("// METODO PRINCIPAL \n int main(){\n%s\nreturn 0;}", "//tres del main");
+
+                val_attr.set("tres", tres);
+
+                nodo.setVal(val_attr);
+            }
+        };
+
+        // registro de las operaciones
+        operaciones.put(MAIN.getId(), MAIN);
+        operaciones.put(DECLARACION.getId(), DECLARACION);
+        return operaciones;
+    }
 
     /**
      * @param args the command line arguments

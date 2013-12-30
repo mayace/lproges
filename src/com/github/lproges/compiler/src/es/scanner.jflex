@@ -12,7 +12,7 @@ import java.lang.StringBuilder;
 %cup
 %line
 %column
-%state YYSTRING YYCOMMENT YYCHAR
+%state YYSTRING YYCOMMENT YYCHAR  YYINCLUDE_STRING YYINCLUDE_CHAR
 
 %{
     /** Errores **/
@@ -64,6 +64,10 @@ SIMPLE_COMMENT  = "&"[^\n\r]*{NEWLINE}
     "booleano"          {return symbol(Sym.KW_BOOLEAN);}
     "caracter"          {return symbol(Sym.KW_CHAR);}
     "decimal"           {return symbol(Sym.KW_FLOAT);}
+    "normal"            {return symbol(Sym.KW_NORMAL);}
+
+    "incluir"           {return symbol(Sym.KW_INCLUDE);}
+
 
     "="                 {return symbol(Sym.EQUAL);}
     ","                 {return symbol(Sym.COMA);}
@@ -103,8 +107,14 @@ SIMPLE_COMMENT  = "&"[^\n\r]*{NEWLINE}
     "publica"           {return symbol(Sym.PUBLIC);}
     "privada"           {return symbol(Sym.PRIVATE);}
 
+
+
+    \"                  {string.setLength(0); yybegin(YYINCLUDE_STRING);}
+    \'                  {string.setLength(0); yybegin(YYINCLUDE_CHAR);}
+
     \\                  {string.setLength(0); yybegin(YYSTRING);}
     "_"                 {string.setLength(0); yybegin(YYCHAR);}
+
     {INT}               {return symbol(Sym.INT);}
     {BOOLEAN}           {return symbol(Sym.BOOLEAN);}
     {FLOAT}             {return symbol(Sym.FLOAT);}
@@ -146,6 +156,30 @@ SIMPLE_COMMENT  = "&"[^\n\r]*{NEWLINE}
     ":_"        { string.append('_'); }
     ":\\"       { string.append('\\'); }
     [^\n\r\\]+  { string.append( yytext() ); }
+}
+<YYINCLUDE_STRING>{
+    \"          {
+                    yybegin(YYINITIAL);
+                    return symbol(Sym.INCLUDE_STRING,string.toString());
+                }
+    ":s"        { string.append('\n'); }
+    ":t"        { string.append('\t'); }
+    ":r"        { string.append('\r'); }
+    ":_"        { string.append('_'); }
+    ":\\"       { string.append('\\'); }
+    [^\n\r\\\"]+  { string.append( yytext() ); }
+}
+<YYINCLUDE_CHAR>{
+    \'          {
+                    yybegin(YYINITIAL);
+                    return symbol(Sym.INCLUDE_CHAR,string.toString());
+                }
+    ":s"        { string.append('\n'); }
+    ":t"        { string.append('\t'); }
+    ":r"        { string.append('\r'); }
+    ":_"        { string.append('_'); }
+    ":\\"       { string.append('\\'); }
+    [^\n\r\\\']+  { string.append( yytext() ); }
 }
 
 
