@@ -1,0 +1,24 @@
+digraph G {
+
+ node [fillcolor="#D7DFE8", shape=record, style="filled"];
+ edge[arrowhead="vee"]
+{ node[label="Entrada"]"inicio";}
+{ node[label="B1:\n i=1"]"B1";}
+{ node[label="B2:\n j=1"]"B2";}
+{ node[label="B3:\n t1=10*i\n if i≤10 goto B3"]"B3";}
+{ node[label="B4:\n j=j+1\n if j≤10 goto B2"]"B4";}
+{ node[label="B5:\n i=1"]"B5";}
+{ node[label="B6:\n t5=i-1\nt6=88*t5\n i=i+1\n if i≤10 goto B6"]"B6";}
+{ node[label="SALIDA"]"fin";}
+"inicio" -> "B1";
+"B1" -> "B2";
+"B2" -> "B3";
+"B3" -> "B4";
+"B3" -> "B3";
+"B4" -> "B5";
+"B4" -> "B2";
+"B5" -> "B6";
+"B6" -> "B6";
+"B6" -> "fin";
+} 
+

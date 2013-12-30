@@ -1,0 +1,8 @@
+digraph G {
+
+ node [fillcolor="#D7DFE8", shape=box, style="filled"]
+edge[arrowhead="vee"];
+{ node[label="INICIO"]"inicio";}
+
+}
+
