@@ -5,7 +5,6 @@ import com.github.lproges.compiler.Err;
 import com.github.lproges.compiler.Nodo;
 import java.util.LinkedList;
 import java.util.ArrayList;
-import java.util.Stack;
 
 
 parser code {: 
@@ -34,7 +33,7 @@ parser code {:
 :};
 
 action code{:
-	
+
     void report_error(String msg,Object info){
         parser.report_error(msg,info);
     }
@@ -43,38 +42,6 @@ action code{:
     }
     void addError(String msg,Object info,Err.TIPO tipo){
         parser.getErrores().add(new Err(msg,info,tipo));
-    }
-
-    Stack<String> scope_stack = new Stack<>();
-
-    String getScope(){
-    	String ret = "";
-    	int i = 0;
-    	for(String str : scope_stack){
-    		if (i == 0){
-    			ret = str;
-    		} else {
-    			ret += "." + str;
-    		}
-    		i++;
-    	}
-    	System.out.println(ret);
-    	return ret;
-    }
-
-    void pushScope(String name,Object ... param_list){
-    	String scope_str = name;
-
-    	if(param_list != null && param_list.length > 0){
-    		for(int i = 0; i<param_list.length; i++){
-    			scope_str += (i == 0 ? "," : ".") + param_list[i];
-    		}
-    	}
-    	scope_stack.push(scope_str);
-    }
-
-    String popScope(){
-    	return scope_stack.pop();
     }
 :}
 
@@ -87,12 +54,11 @@ terminal        String      KW_INT,KW_STRING,KW_BOOLEAN,KW_FLOAT,KW_CHAR,INT,STR
                             KW_INCLUDE,INCLUDE_STRING,INCLUDE_CHAR,KW_OF,KW_ARRAY,CQ,OQ
                             ;
 non terminal    Attr        begin,input,stmt_list,stmt,id,int,string,boolean,float,char,def_var,
-                            id_list,tipo,expr,include_list,include,def_list,def,main_def,method_body,
-                            var_def,dimension,dimension_list,method_def,parm,param_list,
-                            param_def,param,method_param
+                            id_list,tipo,expr,include_list,include,def_list,def,main_def,main_body,
+                            var_def,dimension,dimension_list
                             ;
 /****************************************************************************************/
-begin       ::= input 	{:System.err.println("Compiled...");:}
+begin       ::= input 	{:System.out.println("[Compiler] - Compiled...");:}
                 ;
 // *********************************************************************************
 // Input - Contenido de la entrada
@@ -119,85 +85,29 @@ def_list	::=	def_list def
 				|def
 				;
 
-def 		::= method_def:x 	
+def 		::= main_def:x 	
 				{:
 					addNodo(x.getNodo("nodo"));
 				:}
 				//|class_def
-				|error 		
+				|error 		{:RESULT = new Attr();:}
 				;
-
-
-// *********************************************************************************
-// Clase...
-// *********************************************************************************
-
-// DEF METODO
-method_def	::= tipo:t id:x LP method_param:p RP LB 
-												{:
-													if(p.getString("tipo_list") == null){
-														pushScope(x.getString("val"));
-													} else {
-														Object[] tipo_array = p.getString("tipo_list").split("\\.");
-														pushScope(x.getString("val"),tipo_array);
-													}
-													
-												:} 
-												method_body:b RB 
+// DEFINICION METODO PRINCIPAL
+main_def	::=	KW_NORMAL id:x LP RP LB main_body:b RB
 				{:
-					
-					popScope();
 					Attr attr = new Attr();
-					Attr l_val = new Attr();
 
-					l_val.set("scope",getScope());
-					l_val.set("tipo",t);
-					l_val.set("id",x);
-					l_val.set("list",p.getList("list"));  
-					l_val.set("tipo_list",p.getString("tipo_list"));
-
-					Nodo left = new Nodo(new Attr("val",l_val),false);
-					Nodo right = b.getNodo("nodo");
-
-					attr.set("nodo",new Nodo("method",left,right));
-
+					attr.set("nodo",new Nodo("main",b.getNodo("nodo"),null));
+					
 					RESULT = attr;
-
 				:}
 				;
 
-method_param 	::= param_list:x 	{:RESULT = x;:}
-					|				{:RESULT = new Attr("list",new ArrayList<Attr>());:}
-					;
-param_list 		::= param_list:l COMA param:x
-					{:
-						l.set("tipo_list",l.getString("tipo_list") + "." + x.getAttr("tipo").getString("val"));
-						l.getList("list").add(x);
-						RESULT = l;
-					:}
-					|param:x
-					{:
-						Attr attr = new Attr();
-						ArrayList<Attr> list = new ArrayList<>();
-						String tipo_lista = x.getAttr("tipo").getString("val");
-						list.add(x);
-						attr.set("list",list);
-						attr.set("tipo_list",tipo_lista);
-						RESULT = attr;
-					:}
-					;
-param 			::= tipo:t id:x
-					{:
-						Attr attr = new Attr();
-
-						attr.set("tipo",t);
-						attr.set("id",x);
-						RESULT = attr;
-					:}
-					;
-method_body 	::= stmt_list:x 	{:RESULT = x;:}
-				|					{:RESULT = new Attr();:}
+main_body 	::= stmt_list:x 	{:RESULT = x;:}
+				|				{:RESULT = new Attr();:}
 				;
+
+// DEFINICION CLASE
 
 // *********************************************************************************
 // Sentencias
@@ -219,20 +129,17 @@ stmt        ::= var_def:x 	{:RESULT = x;:}
                 ;
 
 
-// *********************************************************************************
-// Variables
-// *********************************************************************************
-// DEFINICIONES
+
+// DEFINICION DE VARIABLES
 var_def 	::= tipo:t id_list:l PCOMA
 				{:
 					Attr attr = new Attr();
-					Attr l_val = new Attr();
+					Attr l_attr = new Attr();
 
-					l_val.set("scope",getScope());
-					l_val.set("tipo",t);
-					l_val.set("list",l.getList("list"));
+					l_attr.set("tipo",t);
+					l_attr.set("list",l.getList("list"));
 
-					Nodo left = new Nodo(new Attr("val",l_val),false);
+					Nodo left = new Nodo(l_attr,false);
 					Nodo right = null;
 
 					attr.set("nodo",new Nodo("declaracion",left,right));
@@ -247,7 +154,7 @@ var_def 	::= tipo:t id_list:l PCOMA
 					l_attr.set("tipo",t);
 					l_attr.set("list",l.getList("list"));
 
-					Nodo left = new Nodo(new Attr("val",l_attr),false);
+					Nodo left = new Nodo(l_attr,false);
 					Nodo right = e.getNodo("nodo");
 
 					attr.set("nodo",new Nodo("declaracion",left,right));
@@ -259,12 +166,11 @@ var_def 	::= tipo:t id_list:l PCOMA
 					Attr attr = new Attr();
 					Attr l_attr = new Attr();
 
-					l_attr.set("scope",getScope());
 					l_attr.set("tipo",t);
 					l_attr.set("id",x);
-					l_attr.set("list",l.get("list"));
+					l_attr.set("dimension",l.get("list"));
 
-					Nodo left = new Nodo(new Attr("val",l_attr),false);
+					Nodo left = new Nodo(l_attr,false);
 
 					attr.set("nodo",new Nodo("declaracion_array",left,null));
 
@@ -277,7 +183,6 @@ tipo        ::= KW_CHAR         {:RESULT = new Attr("val","char");:}
                 |KW_STRING      {:RESULT = new Attr("val","string");:}
                 |KW_INT         {:RESULT = new Attr("val","int");:}
                 |KW_FLOAT       {:RESULT = new Attr("val","float");:}
-                |KW_NORMAL 		{:RESULT = new Attr("val","void");:}
                 |error          {:RESULT = new Attr();:}
                 ;
 
@@ -300,7 +205,7 @@ id_list     ::= id_list:l COMA id:x
 dimension_list 	::=	dimension_list:l dimension:x
 					{:
 						l.getList("list").add(x);
-						RESULT = l;
+						RESULT = x;
 					:}
 					|dimension:x
 					{:
@@ -338,7 +243,6 @@ char        ::= CHAR:x
                     a.set("val",x);
                     a.set("tipo","char");
                     a.set("info",CUP$Parser$stack.peek());
-                    a.set("nodo",new Nodo(a,false));
                     RESULT = a;
                 :}
                 ;
@@ -349,7 +253,6 @@ float       ::= FLOAT:x
                     a.set("val",x);
                     a.set("tipo","float");
                     a.set("info",CUP$Parser$stack.peek());
-                    a.set("nodo",new Nodo(a,false));
                     RESULT = a;
                 :}
                 ;
@@ -360,7 +263,6 @@ boolean     ::= BOOLEAN:x
                     a.set("val",x);
                     a.set("tipo","boolean");
                     a.set("info",CUP$Parser$stack.peek());
-                    a.set("nodo",new Nodo(a,false));
                     RESULT = a;
                 :}
                 ;
@@ -370,7 +272,6 @@ string      ::= STRING:x
                     a.set("val",x);
                     a.set("tipo","string");
                     a.set("info",CUP$Parser$stack.peek());
-                    a.set("nodo",new Nodo(a,false));
                     RESULT = a;
                 :}
                 ;
@@ -380,7 +281,6 @@ int         ::= INT:x
                     a.set("val",x);
                     a.set("tipo","int");
                     a.set("info",CUP$Parser$stack.peek());
-                    a.set("nodo",new Nodo(a,false));
                     RESULT = a;
                 :}
                     ;
@@ -390,7 +290,6 @@ id          ::= ID:x
                     a.set("val",x);
                     a.set("id",true);
                     a.set("info",CUP$Parser$stack.peek());
-                    a.set("nodo",new Nodo(a,true));
                     RESULT = a;
                 :}
                 ;

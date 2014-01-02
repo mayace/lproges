@@ -15,6 +15,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -169,10 +170,20 @@ public class Win extends javax.swing.JFrame {
 
         symtableMenu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_T, java.awt.event.InputEvent.CTRL_MASK));
         symtableMenu.setText("MostrarTabla de Simbolos");
+        symtableMenu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                symtableMenuActionPerformed(evt);
+            }
+        });
         compilerMenu.add(symtableMenu);
 
         errorMenu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_MASK));
         errorMenu.setText("Mostrar Errores");
+        errorMenu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                errorMenuActionPerformed(evt);
+            }
+        });
         compilerMenu.add(errorMenu);
 
         menuBar.add(compilerMenu);
@@ -265,15 +276,18 @@ public class Win extends javax.swing.JFrame {
     }
 
     public void process_result(Scanner scanner, Parser parser) {
+        // pre operaciones
         // errores
         LinkedList<Err> errores = new LinkedList<>();
         errores.addAll(scanner.getErrores());
         errores.addAll(parser.getErrores());
 
+        // init
+        Nodo.CompilerStuff cstuff = getCompilerStuffs(errores);
+        HashMap<Object, Nodo.Operation> operaciones = getOperaciones();
+
         if (errores.isEmpty()) {
             // sin errores
-            Nodo.CompilerStuff cstuff = getCompilerStuffs();
-            HashMap<Object, Nodo.Operation> operaciones = getOperaciones();
 
             // procesar nodos
             LinkedList<Nodo> nodos = parser.getNodos();
@@ -281,14 +295,21 @@ public class Win extends javax.swing.JFrame {
                 nodo.exec(cstuff, operaciones);
             }
             // procesar resultados del nodo
-            Path file = Paths.get("3dir.cpp");
-            // limpiar archivo
-            write_file(file, "", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            // escribir texto 3dir generado por cada nodo
-            for (Nodo nodo : nodos) {
-                Attr nodo_attr = (Attr) nodo.getVal();
-                String nodo_tres = nodo_attr.getString("tres");
-                write_file(file, nodo_tres, StandardOpenOption.APPEND);
+            if (cstuff.getErrors().isEmpty()) {
+                Path file = Paths.get("3dir.cpp");
+                // limpiar archivo
+                write_file(file, "", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                // escribir texto 3dir generado por cada nodo
+                for (Nodo nodo : nodos) {
+                    Attr nodo_attr = (Attr) nodo.getVal();
+                    String nodo_tres = nodo_attr.getString("tres");
+                    write_file(file, nodo_tres, StandardOpenOption.APPEND);
+                }
+            } else {
+                // con errores
+                for (Err err : errores) {
+                    err.println();
+                }
             }
         } else {
             // con errores
@@ -297,8 +318,22 @@ public class Win extends javax.swing.JFrame {
             }
         }
 
-
+        // post operaciones
+        // carga errores
+        gui_errors.getTabla().setModel(cstuff.get_errors_tablemodel());
+        // cargar tabla de simbolos
+        gui_simtable.getTabla().setModel(cstuff.get_symtable_tablemode());
     }//GEN-LAST:event_compileMenuActionPerformed
+
+    private void symtableMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_symtableMenuActionPerformed
+        // TODO add your handling code here:
+        gui_simtable.setVisible(true);
+    }//GEN-LAST:event_symtableMenuActionPerformed
+
+    private void errorMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_errorMenuActionPerformed
+        // TODO add your handling code here:
+        gui_errors.setVisible(true);
+    }//GEN-LAST:event_errorMenuActionPerformed
 
     public void write_file(Path file, String write, OpenOption... ooptions) {
         try {
@@ -308,11 +343,11 @@ public class Win extends javax.swing.JFrame {
         }
     }
 
-    public Nodo.CompilerStuff getCompilerStuffs() {
+    public Nodo.CompilerStuff getCompilerStuffs(LinkedList<Err> errors) {
         final int[] stack = new int[100];
         final int[] heap = new int[100];
         HashMap<Object, Sim> symtable = new HashMap<>();
-        LinkedList<Err> errores = new LinkedList<>();
+        LinkedList<Err> errores = (errors == null ? new LinkedList<Err>() : errors);
 
         Nodo.CompilerStuff cosas_compildor = new Nodo.CompilerStuff(stack, heap, symtable, errores);
         return cosas_compildor;
@@ -325,22 +360,101 @@ public class Win extends javax.swing.JFrame {
 
             @Override
             public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
+                Attr l_val = (Attr) nodo.getLeft().getVal();
+
+                // estructura definida para val (info,tipo,val)
+                Attr l_val_val = l_val.getAttr("val");
+
+                // estructura enviada por la gramatica
+                Attr tipo_attr = l_val_val.getAttr("tipo");
+                ArrayList<Attr> var_list = l_val_val.getList("list");
+                String scope = l_val_val.getString("scope");
+
+                // procesando estructura enviada por la gramatica
+                String tipo_val = tipo_attr.getString("val");
+
+                for (Attr var_attr : var_list) {
+                    String var_val = var_attr.getString("val");
+                    Object var_info = var_attr.get("info");
+
+                    // procesando variable
+                    if (compiler.existsKey(scope, var_val)) {
+                        compiler.addError(new Err("Ya existe la variable: " + var_val, var_info, Err.TIPO.SEMANTICO));
+                    } else {
+                        compiler.addVar(scope, var_val, tipo_val, "variable", 1);
+                    }
+                }
 
             }
         };
-        Nodo.Operation main = new Nodo.Operation("main") {
+
+        Nodo.Operation method = new Nodo.Operation("method") {
 
             @Override
             public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
-                Attr val_attr = new Attr();
+                Attr val = new Attr();
+                Attr l_val = (Attr) nodo.getLeft().getVal();
 
-                Nodo l = nodo.getLeft();
+                String val_tres = "";
 
-                String tres = String.format("// METODO PRINCIPAL \n int main(){\n%s\nreturn 0;\n}", "//tres del main");
+                if (l_val != null) {
+                    // datos del val
+                    Attr l_val_val = l_val.getAttr("val");
+                    // datos enviada por la gramatica
+                    String method_scope = l_val_val.getString("scope");
+                    Attr method_tipo_attr = l_val_val.getAttr("tipo");
+                    Attr method_id_attr = l_val_val.getAttr("id");
+                    ArrayList<Attr> method_param_list = l_val_val.getList("list");
+                    String method_tipo_list = l_val_val.getString("tipo_list");
+                    // procesar metodo
+                    String method_tipo_val = method_tipo_attr.getString("val");
+                    String method_id_val = method_id_attr.getString("val");
+                    Object method_id_info = method_id_attr.get("info");
+                    String method_var_scope = (method_scope.isEmpty() ? "" : method_scope + ".") + method_id_val + "," + method_tipo_list;
+                    String method_tres = String.format("// METODO {0}\n", method_id_val);
+                    //procesar parametros
+                    boolean method_param_ok = true;
+                    for (int i = 0; i < method_param_list.size(); i++) {
+                        Attr param_attr = method_param_list.get(i);
+                        Attr param_id_attr = param_attr.getAttr("id");
+                        Attr param_tipo_attr = param_attr.getAttr("tipo");
+                        String param_name = param_id_attr.getString("val");
+                        Object param_info = param_id_attr.get("info");
+                        String param_tipo = param_tipo_attr.getString("val");
 
-                val_attr.set("tres", tres);
+                        if (compiler.existsKey(method_var_scope, param_name)) {
+                            compiler.addError(new Err("Ya existe el parametro:" + param_name, param_info, Err.TIPO.SEMANTICO));
+                            method_param_ok = false;
+                            break;
+                        } else {
+                            compiler.addVar(method_var_scope, param_name, param_tipo, "parametro", 1);
+                        }
 
-                nodo.setVal(val_attr);
+                    }
+
+                    if (method_param_ok) {
+                        // verificar la existencia del metodo
+                        Object[] method_tipo_array = method_tipo_list.split("\\.");
+                        if (compiler.existsKey(method_scope, method_id_val, method_tipo_array)) {
+                            compiler.addError(new Err("Ya existe el metodo: " + method_id_val, method_id_info, Err.TIPO.SEMANTICO));
+                        } else {
+                            compiler.addMethod(method_scope, method_id_val, method_tipo_val, method_tipo_array);
+                        }
+                    } else {
+                        // error de parametros
+                    }
+
+                    // crear codigo tres direcciones
+                    val_tres = method_tres;
+                }
+
+                // enviar el resultado
+                // una definicion de metodo no retorna nada... solo tres dircciones
+                val.set("tipo", null);
+                val.set("info", null);
+                val.set("val", null);
+                val.set("tres", val_tres);
+                nodo.setVal(val);
             }
         };
 
@@ -349,18 +463,66 @@ public class Win extends javax.swing.JFrame {
             @Override
             public void exec(Nodo nodo, Nodo.CompilerStuff compiler, Object operations) {
                 Attr val = new Attr();
-                Attr l_attr = (Attr) nodo.getLeft().getVal();
-                Attr tipo_attr = l_attr.getAttr("tipo");
-                Attr id_attr = l_attr.getAttr("id");
-                ArrayList<Attr> list = l_attr.getList("list");
+                // obteniendo informacion
+                Attr l_val = (Attr) nodo.getLeft().getVal();
+                // estructura val (tipo,info,val)
+                Attr l_val_val = l_val.getAttr("val");
                 
+                // estructura enviada por la gramatica
+                String array_scope = l_val_val.getString("scope");
+                Attr array_tipo_attr = l_val_val.getAttr("tipo");
+                Attr array_id_attr = l_val_val.getAttr("id");
+                ArrayList<Attr> array_dimension_list = l_val_val.getList("list");
+                
+                // procesando informacion
+                String array_tipo_val = array_tipo_attr.getString("val");
+                final String array_id_val = array_id_attr.getString("val");
+                final Object array_id_info = array_id_attr.get("info");
+                final Object array_key = compiler.getKey(array_scope, array_id_val);
+
+                // verificando existencia de simbolo
+                if (compiler.getSimtable().containsKey(array_key)) {
+                    compiler.getErrors().add(new Err("Ya existe la variable: " + array_id_val, array_id_info, Err.TIPO.SEMANTICO));
+                } else {
+                    // obtencion del tamanio del arreglo
+                    int array_size = 1;
+                    for (Attr attr : array_dimension_list) {
+                        // ejecutar la expresion
+                        final Nodo d_nodo = attr.getNodo("nodo");
+                        d_nodo.exec(compiler, operations);
+                        // obteniendo el resultado
+                        Attr d_val = (Attr) d_nodo.getVal();
+                        Attr d_val_val = d_val.getAttr("val");
+                        String d_tipo = d_val.getString("tipo");
+                        if (d_tipo.equals("int")) {
+                            Integer d_size = d_val.getInteger("val");
+                            array_size *= d_size;
+                        } else {
+                            // error en resultado de la expresion
+                            compiler.getErrors().add(new Err("Se esperaba un entero....", array_id_info, Err.TIPO.SEMANTICO));
+                            break;
+                        }
+                    }
+                    // procesando resultado
+                    if (compiler.getErrors().isEmpty()) {
+                        // creando simbolo
+                        compiler.addVar(array_scope, array_id_val, array_tipo_val, "arreglo", array_size);
+                    }
+                }
+
+                
+                // enviar resultado
+                val.set("tipo",null);
+                val.set("val", null);
+                val.set("info",null);
                 
                 nodo.setVal(val);
             }
+
         };
 
         // registro de las operaciones
-        operaciones.put(main.getId(), main);
+        operaciones.put(method.getId(), method);
         operaciones.put(declaracion.getId(), declaracion);
         operaciones.put(declaracion_array.getId(), declaracion_array);
         return operaciones;
@@ -433,4 +595,6 @@ public class Win extends javax.swing.JFrame {
     private com.github.lproges.editor.gui.TabPane tabPane1;
     // End of variables declaration//GEN-END:variables
 
+    SimTable gui_simtable = new SimTable(this, false);
+    Errors gui_errors = new Errors(this, false);
 }

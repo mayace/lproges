@@ -1,24 +1,93 @@
 package com.github.lproges.compiler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class Sim {
 
     private final String scope;
     private final String name;
     private final String type;
+    private final String rol;
     private final int pos;
+    private final int size;
+    private final int[] dimensions; // arreglos
+    private final Object[] param_list; // metodos
 
-    public Sim(String scope, String name, String type, int pos) {
+   
+    
+    
+
+    /**
+     * Definicion para variables
+     *
+     * @param scope
+     * @param name
+     * @param type
+     * @param rol
+     * @param pos
+     * @param size
+     */
+    public Sim(String scope, String name, String type,String rol, int pos, int size) {
         this.scope = scope;
         this.name = name;
         this.type = type;
+        this.rol = rol;
         this.pos = pos;
+        this.size = size;
+        this.dimensions = new int[]{};
+        this.param_list = new Object[]{};
+    }
+
+    /**
+     * Definicion para variables tipo arreglo
+     *
+     * @param scope
+     * @param name
+     * @param type
+     * @param pos
+     * @param size
+     * @param dimensions
+     */
+    public Sim(String scope, String name, String type, int pos, int size, int... dimensions) {
+        this.scope = scope;
+        this.name = name;
+        this.type = type;
+        this.rol = "variable_arreglo";
+        this.pos = pos;
+        this.size = size;
+        this.dimensions = dimensions;
+        this.param_list = new Object[]{};
+    }
+
+    /**
+     * Definicion para metodo
+     *
+     * @param scope
+     * @param name
+     * @param type
+     * @param size
+     * @param param_list
+     */
+    public Sim(String scope, String name, String type, int size, Object[] param_list) {
+        this.scope = scope;
+        this.name = name;
+        this.type = type;
+        this.rol = (type != null && !type.equals("void") ? "funcion" : "metodo");
+        this.pos = -1;
+        this.size = size;
+        this.dimensions = new int[]{};
+        this.param_list = param_list;
+    }
+
+    public int getSize() {
+        return size;
     }
 
     public String getScope() {
         return scope;
     }
 
-    
     public String getName() {
         return name;
     }
@@ -29,6 +98,33 @@ public class Sim {
 
     public int getPos() {
         return pos;
+    }
+
+    public int[] getDimensions() {
+        return dimensions;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public Object[] getParam_list() {
+        return param_list;
+    }
+    
+    
+
+    public String getFullName() {
+        String ret = getScope() + "." + getName();
+        return ret;
+    }
+
+    public static Object[] getArrayHeader() {
+        return new Object[]{"Scope", "Nombre", "Tipo","Rol", "Posicion", "Tamanio", "Dimensiones","Parametros"};
+    }
+
+    public Object[] toArray() {
+        return new Object[]{getScope(), getName(), getType(),getRol(), getPos(), getSize(), Arrays.toString(getDimensions()),Arrays.toString(getParam_list())};
     }
 
 }

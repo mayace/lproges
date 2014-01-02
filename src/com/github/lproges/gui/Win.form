@@ -146,6 +146,9 @@
                 </Property>
                 <Property name="text" type="java.lang.String" value="MostrarTabla de Simbolos"/>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="symtableMenuActionPerformed"/>
+              </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="errorMenu">
               <Properties>
@@ -154,6 +157,9 @@
                 </Property>
                 <Property name="text" type="java.lang.String" value="Mostrar Errores"/>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="errorMenuActionPerformed"/>
+              </Events>
             </MenuItem>
           </SubComponents>
         </Menu>

@@ -1,5 +1,6 @@
 package com.github.lproges.compiler;
 
+import java_cup.runtime.ComplexSymbolFactory;
 import java_cup.runtime.Symbol;
 
 public class Err {
@@ -81,5 +82,15 @@ public class Err {
 
         System.err.println(t + " Error:");
         System.err.println(toString());
+    }
+
+    public static Object[] getArrayHeader() {
+        return new String[]{"TIPO", "LINEA", "COLUMNA", "TOKEN", "MENSAJE"};
+    }
+
+    public Object[] toArray() {
+        final Symbol sym1 = (getSym() == null ? new Symbol(-1) : getSym());
+
+        return new Object[]{getType(), sym1.left, sym1.right, sym1.value, getMsg()};
     }
 }

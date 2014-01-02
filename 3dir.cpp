@@ -1,4 +1,1 @@
-// METODO PRINCIPAL 
- int main(){
-//tres del main
-return 0;}
+// METODO {0}
