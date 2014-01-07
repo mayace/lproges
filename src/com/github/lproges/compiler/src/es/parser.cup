@@ -3,6 +3,7 @@ package com.github.lproges.compiler.es;
 import com.github.lproges.compiler.Attr;
 import com.github.lproges.compiler.Err;
 import com.github.lproges.compiler.Nodo;
+import com.github.lproges.compiler.Compiler;
 import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Stack;

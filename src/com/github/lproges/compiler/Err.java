@@ -1,35 +1,15 @@
 package com.github.lproges.compiler;
 
-import java_cup.runtime.ComplexSymbolFactory;
+import java.text.MessageFormat;
 import java_cup.runtime.Symbol;
 
 public class Err {
 
-    public static String ERROR_CONVERT = "No se puede convertir.";
-    public static String ERROR_STMT = "Se esperaba una sentencia.";
-
     private String msg;
     private Symbol sym;
     private TIPO TIPO;
-    public static final String FORMAT = "[Error] in line %d column %d on value '%s'. Message: %s";
-    public static final String ERROR_ID = "Se esperaba un identificador...";
-    public static final String ERROR_INT = "Se esperaba un entero...";
-    public static final String ERROR_BOOLEAN = "Se esperaba un boolean verdadero 'verdadero' o 'falso'...";
-    public static final String ERROR_NULO = "Valor nulo.";
-    public static final String ERROR_VAR_NO_EXISTE = "Variable no existe.";
 
-    public TIPO getType() {
-        return TIPO;
-    }
-
-    public void setType(TIPO type) {
-        this.TIPO = type;
-    }
-
-    public enum TIPO {
-
-        LEXICO, SINTACTICO, SEMANTICO
-    }
+    public static final String FORMAT = "[Error] in line {0} column {1} on value '{2}'. Message: {3}";
 
     public Err(String msg, Object sym, TIPO type) {
         this.msg = msg;
@@ -38,6 +18,20 @@ public class Err {
         if (sym instanceof Symbol) {
             this.sym = (Symbol) sym;
         }
+    }
+
+    public enum TIPO {
+
+        LEXICO, SINTACTICO, SEMANTICO
+    }
+
+    //<editor-fold defaultstate="collapsed" desc="getter and setter">
+    public TIPO getType() {
+        return TIPO;
+    }
+
+    public void setType(TIPO type) {
+        this.TIPO = type;
     }
 
     public Symbol getSym() {
@@ -55,7 +49,9 @@ public class Err {
     public void setMsg(String msg) {
         this.msg = msg;
     }
+    //</editor-fold>
 
+    //<editor-fold defaultstate="collapsed" desc="otros">
     @Override
     public String toString() {
         Symbol s = getSym();
@@ -69,7 +65,7 @@ public class Err {
             value = s.value.toString();
         }
 
-        return String.format(FORMAT, line, column, value, getMsg());
+        return MessageFormat.format(FORMAT, line, column, value, getMsg());
 
     }
 
@@ -93,4 +89,5 @@ public class Err {
 
         return new Object[]{getType(), sym1.left, sym1.right, sym1.value, getMsg()};
     }
+    //</editor-fold>
 }

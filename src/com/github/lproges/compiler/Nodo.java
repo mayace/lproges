@@ -383,11 +383,11 @@ public class Nodo {
                 size += entry_val.getSize();
             }
             // crear el simbolo para el metodo
-            Sim sim = new Sim(scope, name, type, size, param_list);
+//            Sim sim = new Sim(scope, name, type, size, param_list);
             // agregar metodo a la tabla de simbolos
-            getSimtable().put(key, sim);
+//            getSimtable().put(key, sim);
             // agregar simbolos que corresponden al metodo
-            getSimtable().putAll(_temp_simtable);
+//            getSimtable().putAll(_temp_simtable);
 
 //            temp_stack_simtable.remove(key);
         }

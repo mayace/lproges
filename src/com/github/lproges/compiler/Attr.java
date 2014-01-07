@@ -10,38 +10,31 @@ import java_cup.runtime.Symbol;
 
 public class Attr extends HashMap<String, Object> {
 
+
+    //<editor-fold defaultstate="collapsed" desc="constructores">
     /**
-     * Almacena el nombre y el valor de los atributos creados
+     * Inserta n cantidad de atributos [key1,val1,key2,val2,...,keyn,valn]
+     *
+     * @param args
      */
-    public Attr() {
+    public Attr(Object... args) {
+        String key = null;
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+            if (i % 2 == 0) {
+                key = arg.toString();
+            } else {
+                put(key, arg);
+            }
+        }
     }
 
-    /**
-     * Instanciar con un atributo inicial...
-     *
-     * @param nombre
-     * @param valor
-     */
-    public Attr(String nombre, Object valor) {
-        this.set(nombre, valor);
-    }
-
-    /**
-     * Crea | Modifica un atributo
-     *
-     * @param nombre
-     * @param valor
-     */
-    public final Object set(String nombre, Object valor) {
+    //</editor-fold>
+    public Object set(String nombre, Object valor) {
         return this.put(nombre, valor);
     }
 
-    /**
-     * Devuelve el valor de un atributo
-     *
-     * @param nombre
-     * @return
-     */
+    //<editor-fold defaultstate="collapsed" desc="get">
     public String getString(String nombre) {
         String val = null;
 
@@ -56,19 +49,13 @@ public class Attr extends HashMap<String, Object> {
         return val;
     }
 
-    /**
-     * Devuelve el valor de un atributo
-     *
-     * @param nombre
-     * @return
-     */
     public Float getFloat(String nombre) {
         Float val = null;
 
         if (this.containsKey(nombre)) {
             try {
                 val = Float.valueOf(this.get(nombre).toString());
-            } catch (Exception exc) {
+            } catch (NumberFormatException exc) {
                 return null;
             }
         }
@@ -76,19 +63,13 @@ public class Attr extends HashMap<String, Object> {
         return val;
     }
 
-    /**
-     * Devuelve el valor de un atributo
-     *
-     * @param nombre
-     * @return null si no se encuentra el atributo ó no se puede convertir
-     */
     public Integer getInteger(String nombre) {
         Integer val = null;
 
         if (this.containsKey(nombre)) {
             try {
                 val = new Integer(this.get(nombre).toString());
-            } catch (Exception exc) {
+            } catch (NumberFormatException exc) {
                 return null;
             }
         }
@@ -96,12 +77,40 @@ public class Attr extends HashMap<String, Object> {
         return val;
     }
 
-    /**
-     * Devuelve el valor de un atributo
-     *
-     * @param nombre
-     * @return null si no se encuentra el atributo ó no se puede convertir
-     */
+    public Boolean getBoolean(String nombre) {
+        try {
+            return Boolean.valueOf(get(nombre).toString());
+        } catch (Exception exc) {
+            return null;
+        }
+    }
+
+    public Nodo getNodo(String nombre) {
+        try {
+            return ((Nodo) get(nombre));
+        } catch (Exception exc) {
+            return null;
+        }
+    }
+
+    public Attr getAttr(String nombre) {
+        try {
+            return ((Attr) get(nombre));
+        } catch (Exception exc) {
+            return null;
+        }
+    }
+
+    public Symbol getSymbol(String nombre) {
+        try {
+            return ((Symbol) get(nombre));
+        } catch (Exception exc) {
+            return null;
+        }
+    }
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="listas">
     public ArrayList<Attr> getList(String nombre) {
         ArrayList<Attr> val = null;
 
@@ -115,26 +124,7 @@ public class Attr extends HashMap<String, Object> {
 
         return val;
     }
-  //           public ArrayList<MySym> getMySymList(String nombre){
-    //		   ArrayList<MySym> val=null;
-    //		   
-    //		   if(this.attribute.containsKey(nombre)){
-    //			   try {
-    //				   val = (ArrayList<MySym>) this.attribute.get(nombre);
-    //			   } catch (Exception exc) {
-    //				   return null;
-    //			   }
-    //		   }
-    //		   
-    //		   return val;
-    //		}
 
-    /**
-     * Devuelve el valor de un atributo
-     *
-     * @param nombre
-     * @return null si no se encuentra el atributo ó no se puede convertir
-     */
     public ArrayList<Integer> getIntegerList(String nombre_l, String nombre) {
         ArrayList<Attr> val = null;
 
@@ -158,13 +148,6 @@ public class Attr extends HashMap<String, Object> {
         return val2;
     }
 
-    /**
-     * Devuelve una lista de Flotantes
-     *
-     * @param list_nombre nombre de la lista donde se encuentra los MyClass
-     * @param nombre nombre del atributo que contiene los flotatnes en MyClass
-     * @return null si no se encuentra el atributo ó no se puede convertir
-     */
     public ArrayList<Float> getFloatList(String list_nombre, String nombre) {
         ArrayList<Attr> val = null;
 
@@ -188,13 +171,6 @@ public class Attr extends HashMap<String, Object> {
         return val2;
     }
 
-    /**
-     * Devuelve una lista de Flotantes
-     *
-     * @param list_nombre nombre de la lista donde se encuentra los MyClass
-     * @param nombre nombre del atributo que contiene los flotatnes en MyClass
-     * @return null si no se encuentra el atributo ó no se puede convertir
-     */
     public ArrayList<String> getStringList(String list_nombre, String nombre) {
         ArrayList<Attr> val = null;
 
@@ -217,64 +193,9 @@ public class Attr extends HashMap<String, Object> {
 
         return val2;
     }
+    //</editor-fold>
 
-    /**
-     * Devuelve el valor de un atributo
-     *
-     * @param nombre
-     * @return
-     */
-//	public Object get(String nombre){
-//		Object val=null;
-//
-//		if(this.containsKey(nombre)){
-//			try {
-//				val = this.get(nombre);
-//			} catch (Exception exc) {
-//				return null;
-//			}
-//		}
-//
-//		return val;
-//	}
-    public Boolean getBoolean(String nombre) {
-        try {
-            return Boolean.valueOf(get(nombre).toString());
-        } catch (Exception exc) {
-            return null;
-        }
-    }
-
-    public Nodo getNodo(String nombre){
-        try {
-            return ((Nodo) get(nombre));
-        } catch (Exception exc) {
-            return null;
-        }
-    }
-    public Attr getAttr(String nombre) {
-        try {
-            return ((Attr) get(nombre));
-        } catch (Exception exc) {
-            return null;
-        }
-    }
-
-  //           public MySym getMySym(String nombre){
-    //               try {
-    //                   return ((MySym)getObject(nombre));
-    //               } catch (Exception exc) {
-    //                   return null;
-    //               }
-    //           }
-    public Symbol getSymbol(String nombre) {
-        try {
-            return ((Symbol) get(nombre));
-        } catch (Exception exc) {
-            return null;
-        }
-    }
-
+    //<editor-fold defaultstate="collapsed" desc="otros">
     public String getHtmlTable() {
         String html_table = "<table>";
         html_table += String.format("<tr><td><b>%s</b></td><td><b>%s</b></td></tr>", "Key", "Value");
@@ -309,4 +230,5 @@ public class Attr extends HashMap<String, Object> {
 
         return string;
     }
+    //</editor-fold>
 }
